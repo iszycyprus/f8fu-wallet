@@ -90,6 +90,26 @@
     function showDashboard(d) { document.getElementById('loading').style.display = 'none'; document.getElementById('dashboard').classList.remove('hidden'); if(d.name) document.getElementById('userName').innerText = d.name; if(d.wallet) { document.getElementById('walletView').classList.remove('hidden'); document.getElementById('actionArea').classList.remove('hidden'); document.getElementById('myAcctNum').innerText = d.wallet.account_number; document.getElementById('noWalletView').classList.add('hidden'); } else document.getElementById('noWalletView').classList.remove('hidden'); }
     function logout() { auth.signOut().then(() => window.location.href = '/login.html'); }
     async function calculate() { const a = document.getElementById('amt').value; if(!a) return; try { const r = await fetch('/api/split', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({amount: a}) }); const d = await r.json(); document.getElementById('v1').innerText = '₦' + d.savings.toLocaleString(); document.getElementById('v2').innerText = '₦' + d.tithe.toLocaleString(); document.getElementById('v3').innerText = '₦' + d.investment.toLocaleString(); document.getElementById('v4').innerText = '₦' + d.needs.toLocaleString(); } catch(e) { alert("Error"); } }
+async function pushFunds() {
+        const amt = document.getElementById('amt').value;
+        if(!amt) return alert("Please enter an amount first.");
+        
+        // Check if user has setup accounts
+        const doc = await db.collection('users').doc(auth.currentUser.uid).get();
+        if(!doc.data().beneficiaries) {
+            if(confirm("You haven't set up your destination accounts yet. Go to Setup?")) {
+                window.location.href = '/setup.html';
+            }
+            return;
+        }
+
+        alert("🚀 PUSH SIMULATION INITIATED!\n\n" +
+              "Funds would now be transferred to:\n" +
+              "1. Tithe: " + doc.data().beneficiaries.tithe.bank + "\n" +
+              "2. Savings: " + doc.data().beneficiaries.savings.bank + "\n" +
+              "3. Invest: " + doc.data().beneficiaries.investment.bank + "\n\n" +
+              "(Real transfers require Live Paystack approval. This confirms logic works!)");
+    }
 </script>
 </body>
 </html>
