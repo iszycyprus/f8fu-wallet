@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Configure Beneficiaries</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #3b82f6; --accent: #8b5cf6; --bg: #0f172a; --card-bg: rgba(30, 41, 59, 0.7); }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: white; padding: 20px; margin: 0; min-height: 100vh; }
+        .container { max-width: 500px; margin: 0 auto; padding-bottom: 50px; }
+        
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
+        .back-btn { background: none; border: 1px solid #444; color: #aaa; padding: 8px 15px; border-radius: 8px; cursor: pointer; text-decoration: none; }
+        h2 { margin: 0; background: linear-gradient(to right, #4ade80, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .group { margin-bottom: 25px; background: var(--card-bg); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+        .group-title { color: #4ade80; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+        
+        label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #94a3b8; }
+        input, select { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; margin-bottom: 15px; box-sizing: border-box; }
+        
+        .save-btn { width: 100%; padding: 18px; border-radius: 12px; border: none; font-weight: 700; font-size: 1rem; background: linear-gradient(to right, var(--primary), var(--accent)); color: white; cursor: pointer; position: sticky; bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>Allocation Accounts</h2>
+        <a href="/index.html" class="back-btn">Back</a>
+    </div>
+
+    <form id="setupForm" onsubmit="saveAccounts(event)">
+        <div class="group">
+            <div class="group-title">⛪ Tithe (10%)</div>
+            <label>Bank Name</label>
+            <input type="text" id="tithe_bank" placeholder="e.g. GTBank" required>
+            <label>Account Number</label>
+            <input type="tel" id="tithe_num" placeholder="0123456789" maxlength="10" required>
+        </div>
+
+        <div class="group">
+            <div class="group-title">🐷 Savings (20%)</div>
+            <label>Bank Name</label>
+            <input type="text" id="sav_bank" placeholder="e.g. PiggyVest / Kuda" required>
+            <label>Account Number</label>
+            <input type="tel" id="sav_num" placeholder="0123456789" maxlength="10" required>
+        </div>
+
+        <div class="group">
+            <div class="group-title">🏠 Needs / House (30%)</div>
+            <label>Bank Name</label>
+            <input type="text" id="needs_bank" placeholder="e.g. OPay" required>
+            <label>Account Number</label>
+            <input type="tel" id="needs_num" placeholder="0123456789" maxlength="10" required>
+        </div>
+
+        <div class="group">
+            <div class="group-title">📈 Investment (40%)</div>
+            <label>Bank Name</label>
+            <input type="text" id="inv_bank" placeholder="e.g. Bamboo / Rise" required>
+            <label>Account Number</label>
+            <input type="tel" id="inv_num" placeholder="0123456789" maxlength="10" required>
+        </div>
+
+        <button type="submit" class="save-btn" id="btn">Save Beneficiaries</button>
+    </form>
+</div>
+
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyC9mvJDfJFzxAkSIolRMw-SAWqdpSRAtMc", authDomain: "f8fu-a40cd.firebaseapp.com", projectId: "f8fu-a40cd", storageBucket: "f8fu-a40cd.firebasestorage.app", messagingSenderId: "633923479388", appId: "1:633923479388:web:c875fecd61100f998a0399" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    let uid = null;
+
+    // Load existing data
+    auth.onAuthStateChanged(user => {
+        if(user) {
+            uid = user.uid;
+            db.collection('users').doc(uid).get().then(doc => {
+                if(doc.exists && doc.data().beneficiaries) {
+                    const b = doc.data().beneficiaries;
+                    document.getElementById('tithe_bank').value = b.tithe.bank;
+                    document.getElementById('tithe_num').value = b.tithe.number;
+                    document.getElementById('sav_bank').value = b.savings.bank;
+                    document.getElementById('sav_num').value = b.savings.number;
+                    document.getElementById('needs_bank').value = b.needs.bank;
+                    document.getElementById('needs_num').value = b.needs.number;
+                    document.getElementById('inv_bank').value = b.investment.bank;
+                    document.getElementById('inv_num').value = b.investment.number;
+                }
+            });
+        } else { window.location.href = '/login.html'; }
+    });
+
+    async function saveAccounts(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn');
+        btn.innerText = "Saving...";
+        
+        const data = {
+            beneficiaries: {
+                tithe: { bank: document.getElementById('tithe_bank').value, number: document.getElementById('tithe_num').value },
+                savings: { bank: document.getElementById('sav_bank').value, number: document.getElementById('sav_num').value },
+                needs: { bank: document.getElementById('needs_bank').value, number: document.getElementById('needs_num').value },
+                investment: { bank: document.getElementById('inv_bank').value, number: document.getElementById('inv_num').value }
+            }
+        };
+
+        try {
+            await db.collection('users').doc(uid).set(data, { merge: true });
+            alert("Accounts Saved Successfully!");
+            window.location.href = '/index.html';
+        } catch(err) {
+            alert("Error saving: " + err.message);
+            btn.innerText = "Save Beneficiaries";
+        }
+    }
+</script>
+</body>
+</html>
