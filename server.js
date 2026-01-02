@@ -28,6 +28,7 @@ app.post('/api/split', (req, res) => {
 app.post('/api/create-wallet', async (req, res) => {
     const { firstName, lastName, email, phone, bvn } = req.body;
     
+    // Security Check
     if (!process.env.PAYSTACK_SECRET) {
         return res.status(500).json({ status: 'error', error: "Server Key Missing" });
     }
@@ -42,14 +43,14 @@ app.post('/api/create-wallet', async (req, res) => {
     try {
         console.log(`Creating wallet for: ${email}`);
         
-        // A. Create Customer
+        // A. Create Customer Profile
         const response = await axios.post('https://api.paystack.co/customer', { 
             email, first_name: firstName, last_name: lastName, phone 
         }, config);
 
         const customerCode = response.data.data.customer_code;
         
-        // B. Validate KYC (If BVN is provided)
+        // B. Submit BVN for Validation (Crucial for OPay/Kuda)
         if (bvn) {
             console.log(`Validating BVN for ${customerCode}...`);
             try {
@@ -60,28 +61,28 @@ app.post('/api/create-wallet', async (req, res) => {
                     first_name: firstName,
                     last_name: lastName
                 }, config);
-                console.log("BVN Submitted successfully.");
+                console.log("BVN Submitted Successfully.");
             } catch (kycError) {
-                console.error("KYC Note:", kycError.response?.data?.message || kycError.message);
+                // We log the error but don't stop the process
+                console.log("KYC Note: " + (kycError.response?.data?.message || "Validation skipped"));
             }
         }
 
-        // C. Fetch/Create Dedicated NUBAN
+        // C. Get the Account Number
         let accountNum = phone; // Fallback
         
-        // Check if auto-created
         if (response.data.data.dedicated_account) {
             accountNum = response.data.data.dedicated_account.account_number;
         } else {
-            // Explicitly request DVA
              try {
+                // Explicitly request a NUBAN if one wasn't auto-generated
                 const dvaRes = await axios.post('https://api.paystack.co/dedicated_account', {
                     customer: customerCode,
                     preferred_bank: "wema-bank" 
                 }, config);
                 accountNum = dvaRes.data.data.account_number;
             } catch (dvaErr) {
-                console.log("DVA Note:", dvaErr.response?.data?.message || "Using fallback phone");
+                console.log("DVA Note: " + (dvaErr.response?.data?.message || "Using fallback"));
             }
         }
 
@@ -94,10 +95,9 @@ app.post('/api/create-wallet', async (req, res) => {
         });
 
     } catch (error) {
-        // Handle User Exists
+        // Handle "User Already Exists" smartly
         if (error.response && error.response.status === 400) {
             try {
-                // Fetch existing user details
                 const fetchRes = await axios.get(`https://api.paystack.co/customer/${email}`, config);
                 res.json({ 
                     status: 'success', 
@@ -116,7 +116,7 @@ app.post('/api/create-wallet', async (req, res) => {
     }
 });
 
-// --- 3. WEBHOOK LISTENER ---
+// --- 3. WEBHOOK LISTENER (For Deposits) ---
 app.post('/api/webhook', (req, res) => {
     const secret = process.env.PAYSTACK_SECRET;
     const hash = crypto.createHmac('sha512', secret).update(JSON.stringify(req.body)).digest('hex');
