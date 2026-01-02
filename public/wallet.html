@@ -23,6 +23,8 @@
 <div class="container">
     <div class="header"> <img src="/logo.jpg" alt="Logo"> <h2>Setup Wallet</h2> <p>One-time setup to generate your account.</p> </div>
     <input type="text" id="fname" placeholder="First Name"> <input type="text" id="lname" placeholder="Last Name"> <input type="email" id="email" placeholder="Email Address"> <input type="tel" id="phone" placeholder="Phone Number"> <button onclick="createWallet()" id="btn">Generate Wallet</button>
+<input type="tel" id="bvn" placeholder="Bank Verification Number (BVN)" maxlength="11" style="border: 1px solid #4ade80;">
+    <p style="font-size:0.7rem; color:#666; margin-bottom:15px; text-align:center;">Required by CBN for wallet creation.</p>
 </div>
 <script>
     const firebaseConfig = { apiKey: "AIzaSyC9mvJDfJFzxAkSIolRMw-SAWqdpSRAtMc", authDomain: "f8fu-a40cd.firebaseapp.com", projectId: "f8fu-a40cd", storageBucket: "f8fu-a40cd.firebasestorage.app", messagingSenderId: "633923479388", appId: "1:633923479388:web:c875fecd61100f998a0399" };
