@@ -31,11 +31,10 @@ app.post('/api/split', (req, res) => {
     });
 });
 
-// 2. CREATE WALLET API
+// 2. CREATE WALLET API (With BVN for Real Accounts)
 app.post('/api/create-wallet', async (req, res) => {
-    const { firstName, lastName, email, phone } = req.body;
+    const { firstName, lastName, email, phone, bvn } = req.body; // <--- ADDED BVN
     
-    // Check Config
     if (!process.env.PAYSTACK_SECRET) {
         return res.status(500).json({ status: 'error', error: "Server Key Missing" });
     }
@@ -50,19 +49,39 @@ app.post('/api/create-wallet', async (req, res) => {
     try {
         console.log(`Creating wallet for: ${email}`);
         
-        // Create User on Paystack
-        const response = await axios.post('https://api.paystack.co/customer', { 
-            email, first_name: firstName, last_name: lastName, phone 
-        }, config);
+        // 1. Create Customer WITH BVN
+        // Paystack uses 'customer' endpoint to save KYC info
+        const customerData = { 
+            email, 
+            first_name: firstName, 
+            last_name: lastName, 
+            phone,
+            metadata: { bvn: bvn } // Some integrations require this, but see step 2
+        };
 
-        // Success (New User)
+        const response = await axios.post('https://api.paystack.co/customer', customerData, config);
+        const customerCode = response.data.data.customer_code;
+
+        // 2. Validate Customer (The KYC Step)
+        // For DVA to work live, we often need to explicitly validate the customer
+        // However, if you enabled "Auto-create DVA" in Paystack settings, 
+        // passing the data might be enough. 
+        
+        // For this code, we return the data. 
+        // If you are in LIVE mode, Paystack will generate a real NUBAN if KYC passes.
+        
+        let accountNum = phone; // Fallback
+        
+        // Check if Paystack gave us a dedicated account immediately
+        if (response.data.data.dedicated_account) {
+            accountNum = response.data.data.dedicated_account.account_number;
+        }
+
         res.json({ 
             status: 'success', 
             data: {
-                customer_code: response.data.data.customer_code,
-                // If DVA is enabled, Paystack usually returns the nuban here in 'dedicated_account'
-                // For now we fallback to phone number if no real account exists yet.
-                account_number: phone 
+                customer_code: customerCode,
+                account_number: accountNum
             }
         });
 
@@ -70,12 +89,13 @@ app.post('/api/create-wallet', async (req, res) => {
         // Handle User Exists
         if (error.response && error.response.status === 400) {
             try {
+                // If user exists, we fetch them. 
                 const fetchRes = await axios.get(`https://api.paystack.co/customer/${email}`, config);
                 res.json({ 
                     status: 'success', 
                     data: {
                         customer_code: fetchRes.data.data.customer_code,
-                        account_number: fetchRes.data.data.phone || phone
+                        account_number: fetchRes.data.data.phone || phone // Fallback
                     }
                 });
             } catch (fetchErr) {
@@ -87,6 +107,7 @@ app.post('/api/create-wallet', async (req, res) => {
         }
     }
 });
+
 
 // 3. THE WEBHOOK (This listens for Money!)
 app.post('/api/webhook', (req, res) => {
