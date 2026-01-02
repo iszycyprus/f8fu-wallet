@@ -48,8 +48,36 @@
         </div>
         <div id="noWalletView" class="hidden" style="text-align:center; padding:40px; background:rgba(255,255,255,0.03); border-radius:20px; border:1px dashed #444;"> <h3>Hello, <span id="userName">User</span></h3> <p style="color:#94a3b8; margin-bottom:20px;">Activate your account to start splitting funds.</p> <button class="btn-calc" onclick="window.location.href='/wallet.html'">Activate Wallet</button> </div>
         <div id="actionArea" class="hidden">
-            <div class="section-title">Split Calculator</div> <input type="number" id="amt" placeholder="Enter Amount (e.g. 5000)"> <button class="btn-calc" onclick="calculate()">Analyze Allocation</button>
-            <div class="grid"> <div class="result-box"> <div class="res-label">Savings (20%)</div> <div id="v1" class="res-val">₦0</div> </div> <div class="result-box"> <div class="res-label">Tithe (10%)</div> <div id="v2" class="res-val">₦0</div> </div> <div class="result-box"> <div class="res-label">Invest (40%)</div> <div id="v3" class="res-val">₦0</div> </div> <div class="result-box"> <div class="res-label">Needs (30%)</div> <div id="v4" class="res-val">₦0</div> </div> </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div class="section-title" style="margin:0;">Split Calculator</div>
+                <a href="/setup.html" style="color:#4ade80; text-decoration:none; font-size:0.9rem;">⚙️ Configure Accounts</a>
+            </div>
+
+            <input type="number" id="amt" placeholder="Enter Amount (e.g. 5000)">
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
+                <button class="btn-calc" onclick="calculate()">Analyze</button>
+                <button class="btn-calc" style="background: linear-gradient(135deg, #ea580c, #f97316);" onclick="pushFunds()">Push Funds 🚀</button>
+            </div>
+
+            <div class="grid">
+                <div class="result-box">
+                    <div class="res-label">Savings (20%)</div>
+                    <div id="v1" class="res-val">₦0</div>
+                </div>
+                <div class="result-box">
+                    <div class="res-label">Tithe (10%)</div>
+                    <div id="v2" class="res-val">₦0</div>
+                </div>
+                <div class="result-box">
+                    <div class="res-label">Invest (40%)</div>
+                    <div id="v3" class="res-val">₦0</div>
+                </div>
+                <div class="result-box">
+                    <div class="res-label">Needs (30%)</div>
+                    <div id="v4" class="res-val">₦0</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
