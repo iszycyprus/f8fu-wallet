@@ -11,8 +11,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",
     "@emailjs/nodejs": "^2.0.0",
-    "firebase-admin": "*",    
-    "axios": "*"              
+    "firebase-admin": "*",
+    "axios": "*"
   },
   "engines": {
     "node": ">=16.0.0"
