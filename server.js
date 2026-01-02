@@ -108,7 +108,6 @@ app.post('/api/create-wallet', async (req, res) => {
     }
 });
 
-
 // 3. THE WEBHOOK (This listens for Money!)
 app.post('/api/webhook', (req, res) => {
     // A. Security Check: Is this really from Paystack?
