@@ -35,6 +35,13 @@
         const btn = document.getElementById('btn'); btn.innerText = "Processing..."; btn.disabled = true;
         const data = { firstName: document.getElementById('fname').value, lastName: document.getElementById('lname').value, email: document.getElementById('email').value, phone: document.getElementById('phone').value };
         try { const res = await fetch('/api/create-wallet', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }); const result = await res.json(); if (result.status === 'success') { await db.collection('users').doc(currentUser.uid).set({ wallet: result.data }, { merge: true }); window.location.href = '/index.html'; } else { alert("Failed: " + result.error); btn.disabled = false; } } catch (e) { alert("Error"); btn.disabled = false; }
+    const data = {
+        firstName: document.getElementById('fname').value,
+        lastName: document.getElementById('lname').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        bvn: document.getElementById('bvn').value // <--- ADD THIS
+    };
     }
 </script>
 </body>
