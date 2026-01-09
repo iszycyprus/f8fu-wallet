@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Configure Beneficiaries</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #3b82f6; --accent: #8b5cf6; --bg: #0f172a; --card-bg: rgba(30, 41, 59, 0.7); }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: white; padding: 20px; margin: 0; min-height: 100vh; }
+        .container { max-width: 500px; margin: 0 auto; padding-bottom: 50px; }
+        
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
+        .back-btn { background: none; border: 1px solid #444; color: #aaa; padding: 8px 15px; border-radius: 8px; cursor: pointer; text-decoration: none; }
+        h2 { margin: 0; background: linear-gradient(to right, #4ade80, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .group { margin-bottom: 25px; background: var(--card-bg); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); position: relative; }
+        .group-badge { position: absolute; top: -10px; right: 20px; background: var(--primary); font-size: 0.7rem; padding: 4px 10px; border-radius: 10px; font-weight: bold; }
+        
+        .row { display: flex; gap: 10px; margin-bottom: 10px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.8rem; color: #94a3b8; }
+        
+        input { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; box-sizing: border-box; font-family: inherit; }
+        input:focus { outline: none; border-color: var(--primary); }
+        
+        .save-btn { width: 100%; padding: 18px; border-radius: 12px; border: none; font-weight: 700; font-size: 1rem; background: linear-gradient(to right, var(--primary), var(--accent)); color: white; cursor: pointer; position: sticky; bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .total-tracker { text-align: right; font-size: 0.9rem; margin-bottom: 20px; color: #aaa; }
+        .total-tracker span { font-weight: bold; color: #4ade80; }
+        .error { color: #ef4444 !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>Custom Split Template</h2>
+        <a href="/index.html" class="back-btn">Back</a>
+    </div>
+
+    <div class="total-tracker">Total Allocation: <span id="totalPercent">0%</span> / 100%</div>
+
+    <form id="setupForm" onsubmit="saveAccounts(event)">
+        <div class="group">
+            <div class="group-badge">Slot 1</div>
+            <div class="row">
+                <div style="flex: 2;">
+                    <label>Category Name</label>
+                    <input type="text" class="cat-name" placeholder="e.g. Tithe" required>
+                </div>
+                <div style="flex: 1;">
+                    <label>Percent (%)</label>
+                    <input type="number" class="cat-percent" placeholder="10" min="0" max="100" oninput="updateTotal()" required>
+                </div>
+            </div>
+            <label>Bank Name</label>
+            <input type="text" class="cat-bank" placeholder="e.g. GTBank" required>
+            <label>Account Number</label>
+            <input type="tel" class="cat-num" placeholder="0123456789" maxlength="10" required>
+        </div>
+
+        <div class="group">
+            <div class="group-badge">Slot 2</div>
+            <div class="row">
+                <div style="flex: 2;">
+                    <label>Category Name</label>
+                    <input type="text" class="cat-name" placeholder="e.g. Savings" required>
+                </div>
+                <div style="flex: 1;">
+                    <label>Percent (%)</label>
+                    <input type="number" class="cat-percent" placeholder="20" min="0" max="100" oninput="updateTotal()" required>
+                </div>
+            </div>
+            <label>Bank Name</label>
+            <input type="text" class="cat-bank" placeholder="e.g. PiggyVest" required>
+            <label>Account Number</label>
+            <input type="tel" class="cat-num" placeholder="0123456789" maxlength="10" required>
+        </div>
+
+        <div class="group">
+            <div class="group-badge">Slot 3</div>
+            <div class="row">
+                <div style="flex: 2;">
+                    <label>Category Name</label>
+                    <input type="text" class="cat-name" placeholder="e.g. Business" required>
+                </div>
+                <div style="flex: 1;">
+                    <label>Percent (%)</label>
+                    <input type="number" class="cat-percent" placeholder="30" min="0" max="100" oninput="updateTotal()" required>
+                </div>
+            </div>
+            <label>Bank Name</label>
+            <input type="text" class="cat-bank" placeholder="e.g. OPay" required>
+            <label>Account Number</label>
+            <input type="tel" class="cat-num" placeholder="0123456789" maxlength="10" required>
+        </div>
+
+        <div class="group">
+            <div class="group-badge">Slot 4</div>
+            <div class="row">
+                <div style="flex: 2;">
+                    <label>Category Name</label>
+                    <input type="text" class="cat-name" placeholder="e.g. Flex" required>
+                </div>
+                <div style="flex: 1;">
+                    <label>Percent (%)</label>
+                    <input type="number" class="cat-percent" placeholder="40" min="0" max="100" oninput="updateTotal()" required>
+                </div>
+            </div>
+            <label>Bank Name</label>
+            <input type="text" class="cat-bank" placeholder="e.g. Kuda" required>
+            <label>Account Number</label>
+            <input type="tel" class="cat-num" placeholder="0123456789" maxlength="10" required>
+        </div>
+
+        <button type="submit" class="save-btn" id="btn">Save Configuration</button>
+    </form>
+</div>
+
+<script>
+    /* global firebase */
+    const firebaseConfig = { apiKey: "AIzaSyC9mvJDfJFzxAkSIolRMw-SAWqdpSRAtMc", authDomain: "f8fu-a40cd.firebaseapp.com", projectId: "f8fu-a40cd", storageBucket: "f8fu-a40cd.firebasestorage.app", messagingSenderId: "633923479388", appId: "1:633923479388:web:c875fecd61100f998a0399" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    let uid = null;
+
+    auth.onAuthStateChanged(user => {
+        if(user) {
+            uid = user.uid;
+            db.collection('users').doc(uid).get().then(doc => {
+                if(doc.exists && doc.data().splitConfig) {
+                    const config = doc.data().splitConfig; 
+                    const names = document.querySelectorAll('.cat-name');
+                    const percents = document.querySelectorAll('.cat-percent');
+                    const banks = document.querySelectorAll('.cat-bank');
+                    const nums = document.querySelectorAll('.cat-num');
+
+                    config.forEach((item, index) => {
+                        if(names[index]) {
+                            names[index].value = item.name;
+                            percents[index].value = item.percent;
+                            banks[index].value = item.bank;
+                            nums[index].value = item.number;
+                        }
+                    });
+                    updateTotal();
+                }
+            });
+        } else { window.location.href = '/login.html'; }
+    });
+
+    function updateTotal() {
+        let total = 0;
+        document.querySelectorAll('.cat-percent').forEach(input => {
+            total += Number(input.value);
+        });
+        const display = document.getElementById('totalPercent');
+        display.innerText = total + "%";
+        
+        if(total !== 100) {
+            display.classList.add('error');
+            document.getElementById('btn').style.opacity = "0.5";
+        } else {
+            display.classList.remove('error');
+            document.getElementById('btn').style.opacity = "1";
+        }
+        return total;
+    }
+
+    async function saveAccounts(e) {
+        e.preventDefault();
+        const total = updateTotal();
+        if(total !== 100) return alert("Total percentage must equal exactly 100%. Currently: " + total + "%");
+
+        const btn = document.getElementById('btn');
+        btn.innerText = "Saving...";
+        
+        const names = document.querySelectorAll('.cat-name');
+        const percents = document.querySelectorAll('.cat-percent');
+        const banks = document.querySelectorAll('.cat-bank');
+        const nums = document.querySelectorAll('.cat-num');
+        
+        let splitConfig = [];
+        for(let i=0; i<4; i++) {
+            splitConfig.push({
+                name: names[i].value,
+                percent: Number(percents[i].value),
+                bank: banks[i].value,
+                number: nums[i].value
+            });
+        }
+
+        try {
+            await db.collection('users').doc(uid).set({ splitConfig: splitConfig }, { merge: true });
+            alert("Custom Template Saved Successfully!");
+            window.location.href = '/index.html';
+        } catch(err) {
+            alert("Error saving: " + err.message);
+            btn.innerText = "Save Configuration";
+        }
+    }
+</script>
+</body>
+</html>

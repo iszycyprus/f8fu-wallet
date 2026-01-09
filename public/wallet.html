@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Setup Wallet</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #3b82f6; --accent: #8b5cf6; --bg: #0f172a; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: white; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { width: 100%; max-width: 400px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header img { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 10px; }
+        h2 { margin: 0; font-size: 1.5rem; }
+        p { color: #94a3b8; margin: 5px 0 0 0; }
+        
+        input { width: 100%; padding: 16px; margin-bottom: 15px; background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; box-sizing: border-box; }
+        
+        /* BVN Highlight */
+        #bvn { border: 1px solid #4ade80; background: rgba(74, 222, 128, 0.1); }
+        .label-bvn { color: #4ade80; font-size: 0.8rem; margin-bottom: 5px; display: block; font-weight: bold; }
+
+        button { width: 100%; padding: 18px; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; font-weight: bold; font-size: 1rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header"> 
+        <img src="/logo.jpg" alt="Logo"> 
+        <h2>Setup Wallet v2.0</h2> 
+        <p>One-time setup to generate your account.</p> 
+    </div>
+    
+    <input type="text" id="fname" placeholder="First Name">
+    <input type="text" id="lname" placeholder="Last Name">
+    <input type="email" id="email" placeholder="Email Address">
+    <input type="tel" id="phone" placeholder="Phone Number">
+    
+    <label class="label-bvn">Bank Verification Number (Required)</label>
+    <input type="tel" id="bvn" placeholder="Enter 11-digit BVN" maxlength="11">
+    
+    <button onclick="createWallet()" id="btn">Generate Wallet</button>
+</div>
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyC9mvJDfJFzxAkSIolRMw-SAWqdpSRAtMc", authDomain: "f8fu-a40cd.firebaseapp.com", projectId: "f8fu-a40cd", storageBucket: "f8fu-a40cd.firebasestorage.app", messagingSenderId: "633923479388", appId: "1:633923479388:web:c875fecd61100f998a0399" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    let currentUser = null;
+
+    auth.onAuthStateChanged(u => {
+        if(u) { currentUser = u; document.getElementById('email').value = u.email || ""; }
+        else window.location.href = '/login.html';
+    });
+
+    async function createWallet() {
+        const btn = document.getElementById('btn');
+        btn.innerText = "Verifying...";
+        btn.disabled = true;
+
+        const bvnVal = document.getElementById('bvn').value;
+        if(bvnVal.length !== 11) {
+            alert("Please enter a valid 11-digit BVN");
+            btn.innerText = "Generate Wallet";
+            btn.disabled = false;
+            return;
+        }
+
+        const data = {
+            firstName: document.getElementById('fname').value,
+            lastName: document.getElementById('lname').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            bvn: bvnVal
+        };
+
+        try {
+            const res = await fetch('/api/create-wallet', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(data)
+            });
+
+            const result = await res.json();
+
+            if (result.status === 'success') {
+                await db.collection('users').doc(currentUser.uid).set({ wallet: result.data }, { merge: true });
+                alert("Success! Account Created.");
+                window.location.href = '/index.html';
+            } else {
+                alert("Failed: " + result.error);
+                btn.disabled = false;
+                btn.innerText = "Try Again";
+            }
+        } catch (e) {
+            alert("Error: " + e.message);
+            btn.disabled = false;
+            btn.innerText = "Try Again";
+        }
+    }
+</script>
+</body>
+</html>

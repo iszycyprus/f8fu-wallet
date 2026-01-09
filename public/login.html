@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F8FU | Secure Access</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #3b82f6; --accent: #8b5cf6; --bg: #0f172a; --glass: rgba(255, 255, 255, 0.05); }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
+        .blob { position: absolute; width: 300px; height: 300px; background: var(--primary); border-radius: 50%; filter: blur(80px); opacity: 0.3; z-index: -1; animation: float 10s infinite alternate; }
+        .blob:nth-child(2) { background: var(--accent); right: -50px; bottom: -50px; animation-delay: -5s; }
+        @keyframes float { 0% { transform: translate(0, 0); } 100% { transform: translate(20px, 40px); } }
+        .glass-card { background: var(--glass); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px 30px; border-radius: 24px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+        .brand-logo { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 3px solid rgba(255,255,255,0.1); padding: 5px; background: rgba(255,255,255,0.05); }
+        h1 { margin: 0; font-size: 1.5rem; font-weight: 700; background: linear-gradient(to right, #4ade80, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 30px; }
+        input { width: 100%; padding: 16px; margin-bottom: 15px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; font-family: inherit; font-size: 1rem; box-sizing: border-box; }
+        .btn-main { width: 100%; padding: 16px; border: none; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.2s; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3); }
+        .btn-main:active { transform: scale(0.98); }
+        .link { margin-top: 20px; display: block; color: #94a3b8; font-size: 0.85rem; text-decoration: none; cursor: pointer; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<div class="blob"></div><div class="blob"></div>
+<div class="glass-card">
+    <img src="/logo.jpg" alt="F8FU" class="brand-logo">
+    <h1>F8FU Access</h1>
+    <p id="subTitle">Financial Steward Management</p>
+    <div id="loginForm">
+        <input type="email" id="l_email" placeholder="Email Address">
+        <input type="password" id="l_pass" placeholder="Password">
+        <button class="btn-main" onclick="login()">Sign In</button>
+        <div class="link" onclick="toggle('signup')">New here? Create Account</div>
+    </div>
+    <div id="signupForm" class="hidden">
+        <input type="text" id="s_name" placeholder="Full Name">
+        <input type="email" id="s_email" placeholder="Email Address">
+        <input type="tel" id="s_phone" placeholder="Phone Number">
+        <input type="password" id="s_pass" placeholder="Create Password">
+        <button class="btn-main" onclick="signup()">Create Account</button>
+        <div class="link" onclick="toggle('login')">Already have an account? Sign In</div>
+    </div>
+</div>
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyC9mvJDfJFzxAkSIolRMw-SAWqdpSRAtMc", authDomain: "f8fu-a40cd.firebaseapp.com", projectId: "f8fu-a40cd", storageBucket: "f8fu-a40cd.firebasestorage.app", messagingSenderId: "633923479388", appId: "1:633923479388:web:c875fecd61100f998a0399" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth(); const db = firebase.firestore();
+    function toggle(view) { document.getElementById('loginForm').classList.toggle('hidden'); document.getElementById('signupForm').classList.toggle('hidden'); document.getElementById('subTitle').innerText = view === 'signup' ? "Join the revolution" : "Financial Steward Management"; }
+    function signup() { const e = document.getElementById('s_email').value, p = document.getElementById('s_pass').value, n = document.getElementById('s_name').value, ph = document.getElementById('s_phone').value; if(!e || !p) return alert("Fill all fields"); auth.createUserWithEmailAndPassword(e, p).then(r => db.collection("users").doc(r.user.uid).set({ name: n, email: e, phone: ph, wallet: null }).then(() => window.location.href = '/index.html')).catch(x => alert(x.message)); }
+    function login() { const e = document.getElementById('l_email').value, p = document.getElementById('l_pass').value; if(!e || !p) return alert("Fill all fields"); auth.signInWithEmailAndPassword(e, p).then(() => window.location.href = '/index.html').catch(x => alert(x.message)); }
+</script>
+</body>
+</html>

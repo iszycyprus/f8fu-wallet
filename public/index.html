@@ -1,0 +1,175 @@
+<<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F8FU Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #3b82f6; --accent: #8b5cf6; --bg: #0f172a; --card-bg: rgba(30, 41, 59, 0.7); }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: white; padding: 20px; margin: 0; min-height: 100vh; }
+        .container { max-width: 480px; margin: 0 auto; padding-bottom: 50px; }
+        .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .nav-logo { display: flex; align-items: center; gap: 10px; }
+        .nav-logo img { width: 40px; height: 40px; border-radius: 50%; }
+        .nav-logo span { font-weight: 700; font-size: 1.2rem; }
+        .logout { opacity: 0.7; font-size: 0.9rem; text-decoration: none; color: white; }
+        .wallet-card { background: linear-gradient(135deg, #059669, #10b981); padding: 25px; border-radius: 20px; color: white; box-shadow: 0 15px 35px rgba(16, 185, 129, 0.2); position: relative; overflow: hidden; margin-bottom: 30px; }
+        .wallet-card::before { content:''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(255,255,255,0.1); border-radius: 50%; }
+        .wallet-label { font-size: 0.8rem; opacity: 0.8; letter-spacing: 1px; text-transform: uppercase; }
+        .wallet-balance { font-size: 2.2rem; font-weight: 700; margin: 5px 0 20px 0; }
+        .wallet-details { display: flex; justify-content: space-between; align-items: flex-end; }
+        .acct-num { font-family: monospace; font-size: 1.1rem; letter-spacing: 2px; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 6px; }
+        .section-title { font-size: 1.1rem; margin-bottom: 15px; opacity: 0.8; }
+        input { width: 100%; padding: 18px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; color: white; font-size: 1.2rem; text-align: center; margin-bottom: 15px; box-sizing: border-box; }
+        input:focus { outline: none; border-color: var(--primary); }
+        .btn-calc { width: 100%; padding: 18px; border-radius: 16px; border: none; font-weight: 700; font-size: 1rem; background: linear-gradient(to right, var(--primary), var(--accent)); color: white; cursor: pointer; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2); transition: 0.2s; }
+        .btn-calc:active { transform: scale(0.98); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
+        .result-box { background: var(--card-bg); padding: 20px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .res-label { font-size: 0.8rem; color: #94a3b8; margin-bottom: 5px; }
+        .res-val { font-size: 1.1rem; font-weight: 700; color: #4ade80; }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        .loader { width: 50px; height: 50px; border: 4px solid #1e293b; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+<div id="loading" class="loading-overlay"> <div class="loader"></div> <p style="margin-top:20px; color:#64748b;">Loading Dashboard...</p> </div>
+<div class="container">
+    <div class="nav"> <div class="nav-logo"> <img src="/logo.jpg" alt="Logo"> <span>F8FU</span> </div> <a onclick="logout()" class="logout">Log Out</a> </div>
+    <div id="dashboard" class="hidden">
+        <div id="walletView" class="hidden">
+            <div class="wallet-card"> <div class="wallet-label">Total Balance</div> <div class="wallet-balance">₦ 0.00</div> <div class="wallet-details"> <div> <div style="font-size:0.7rem; opacity:0.7;">Account Number</div> <div id="myAcctNum" class="acct-num">Fetching...</div> </div> <div style="font-size:0.9rem; font-weight:bold;">Wema Bank</div> </div> </div>
+        </div>
+        <div id="noWalletView" class="hidden" style="text-align:center; padding:40px; background:rgba(255,255,255,0.03); border-radius:20px; border:1px dashed #444;"> <h3>Hello, <span id="userName">User</span></h3> <p style="color:#94a3b8; margin-bottom:20px;">Activate your account to start splitting funds.</p> <button class="btn-calc" onclick="window.location.href='/wallet.html'">Activate Wallet</button> </div>
+        <div id="actionArea" class="hidden">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div class="section-title" style="margin:0;">Split Calculator</div>
+                <a href="/setup.html" style="color:#4ade80; text-decoration:none; font-size:0.9rem;">⚙️ Configure Accounts</a>
+            </div>
+
+            <input type="number" id="amt" placeholder="Enter Amount (e.g. 5000)">
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
+                <button class="btn-calc" onclick="calculate()">Analyze</button>
+                <button class="btn-calc" style="background: linear-gradient(135deg, #ea580c, #f97316);" onclick="pushFunds()">Push Funds 🚀</button>
+            </div>
+
+            <div class="grid">
+                <div class="result-box">
+                    <div class="res-label">Savings (20%)</div>
+                    <div id="v1" class="res-val">₦0</div>
+                </div>
+                <div class="result-box">
+                    <div class="res-label">Tithe (10%)</div>
+                    <div id="v2" class="res-val">₦0</div>
+                </div>
+                <div class="result-box">
+                    <div class="res-label">Invest (40%)</div>
+                    <div id="v3" class="res-val">₦0</div>
+                </div>
+                <div class="result-box">
+                    <div class="res-label">Needs (30%)</div>
+                    <div id="v4" class="res-val">₦0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyC9mvJDfJFzxAkSIolRMw-SAWqdpSRAtMc", authDomain: "f8fu-a40cd.firebaseapp.com", projectId: "f8fu-a40cd", storageBucket: "f8fu-a40cd.firebasestorage.app", messagingSenderId: "633923479388", appId: "1:633923479388:web:c875fecd61100f998a0399" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth(), db = firebase.firestore();
+    setTimeout(() => { if (document.getElementById('loading').style.display !== 'none') showDashboard({ name: "Offline User" }); }, 3000);
+    auth.onAuthStateChanged(u => { if(u) db.collection('users').doc(u.uid).onSnapshot(d => { if(d.exists) showDashboard(d.data()); }, () => {}); else window.location.href = '/login.html'; });
+    function showDashboard(d) { document.getElementById('loading').style.display = 'none'; document.getElementById('dashboard').classList.remove('hidden'); if(d.name) document.getElementById('userName').innerText = d.name; if(d.wallet) { document.getElementById('walletView').classList.remove('hidden'); document.getElementById('actionArea').classList.remove('hidden'); document.getElementById('myAcctNum').innerText = d.wallet.account_number; document.getElementById('noWalletView').classList.add('hidden'); } else document.getElementById('noWalletView').classList.remove('hidden'); }
+    function logout() { auth.signOut().then(() => window.location.href = '/login.html'); }
+    // --- 1. DYNAMIC CALCULATE FUNCTION ---
+async function calculate() {
+        const amtInput = document.getElementById('amt').value;
+        if (!amtInput) return;
+        
+        const amount = parseFloat(amtInput);
+        const SERVICE_FEE = 100; // 🟢 Match the server fee
+
+        if (amount <= SERVICE_FEE) {
+            alert(`Amount must be greater than ₦${SERVICE_FEE} to cover service charges.`);
+            return;
+        }
+
+        // Show the user we are deducting money
+        const distributable = amount - SERVICE_FEE;
+        
+        // Optional: Update a text on screen to show the deduction?
+        // For now, we just calculate based on the remainder.
+
+        try {
+            const user = auth.currentUser;
+            if (!user) return alert("Please login first");
+
+            const doc = await db.collection('users').doc(user.uid).get();
+
+            if (doc.exists && doc.data().splitConfig) {
+                const config = doc.data().splitConfig;
+                const boxes = document.querySelectorAll('.result-box');
+
+                config.forEach((item, index) => {
+                    if (boxes[index]) {
+                        // Calculate share based on DISTRIBUTABLE (Amount - 100)
+                        const share = Math.floor(distributable * (item.percent / 100));
+
+                        const labelEl = boxes[index].querySelector('.res-label');
+                        if (labelEl) labelEl.innerText = `${item.name} (${item.percent}%)`;
+
+                        const valEl = boxes[index].querySelector('.res-val');
+                        if (valEl) valEl.innerText = '₦' + share.toLocaleString();
+                    }
+                });
+                
+                // Let user know visually
+                alert(`Note: ₦${SERVICE_FEE} service charge will be deducted.\nSplitting ₦${distributable.toLocaleString()}...`);
+                
+            } else {
+                alert("Please go to 'Configure Accounts' first!");
+                window.location.href = '/setup.html';
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error: " + e.message);
+        }
+    }
+// --- 2. UPDATED PUSH FUNDS FUNCTION ---
+async function pushFunds() {
+    const amt = document.getElementById('amt').value;
+    if (!amt) return alert("Please enter an amount first.");
+
+    const user = auth.currentUser;
+    const doc = await db.collection('users').doc(user.uid).get();
+
+    // Check for the NEW data structure (splitConfig)
+    if (!doc.exists || !doc.data().splitConfig) {
+        if (confirm("You haven't set up your custom template yet. Go to Setup?")) {
+            window.location.href = '/setup.html';
+        }
+        return;
+    }
+
+    const config = doc.data().splitConfig;
+    
+    // Build a dynamic message
+    let message = "🚀 PUSH SIMULATION INITIATED!\n\nFunds would now be transferred to:\n";
+    config.forEach((item, index) => {
+        message += `${index + 1}. ${item.name}: ${item.bank} (${item.percent}%)\n`;
+    });
+    message += "\n(Real transfers require Live Paystack approval. This confirms logic works!)";
+
+    alert(message);
+}
+</script>
+</body>
+</html>
